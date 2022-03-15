@@ -1,4 +1,4 @@
-import { Dropdown, Icon, Layout, Menu, Select, Spin } from 'antd';
+import { Icon, Layout, Menu, Spin } from 'antd';
 import cookies from 'js-cookie';
 import React from 'react';
 import { hot } from 'react-hot-loader/root';
@@ -14,7 +14,7 @@ import {
 } from 'react-router-dom';
 
 import IconFont from '#app/components/Icon';
-import { INTL_LOCALE_SELECT, INTL_LOCALES } from '#app/config';
+import { INTL_LOCALES } from '#app/config';
 import service from '#app/config/service';
 import { LanguageContext } from '#app/context';
 import Console from '#app/modules/Console';
@@ -31,10 +31,9 @@ import { updateQueryStringParameter } from '#app/utils';
 import './App.less';
 import ConfigServer from './modules/ConfigServer';
 import PrivateRoute from './PrivateRoute';
-import { handleTrackEvent, trackEvent, trackPageView } from './utils/stat';
+import { handleTrackEvent, trackEvent } from './utils/stat';
 
 const { Header, Content } = Layout;
-const { Option } = Select;
 
 interface IState {
   loading: boolean;
@@ -56,20 +55,9 @@ interface IProps
     ReturnType<typeof mapState> {}
 
 class App extends React.Component<IProps, IState> {
-  currentLocale;
+  currentLocale = 'ZH_CN';
   constructor(props: IProps) {
     super(props);
-
-    const regx = /lang=(\w+)/g;
-    const match = regx.exec(props.history.location.search);
-
-    if (match) {
-      cookies.set('locale', match[1].toUpperCase());
-    } else {
-      cookies.set('locale', 'ZH_CN');
-    }
-
-    this.currentLocale = cookies.get('locale');
     this.state = {
       loading: true,
       activeMenu: '',
@@ -143,22 +131,14 @@ class App extends React.Component<IProps, IState> {
     this.props.asyncClearConfigServer();
   };
 
+  back2Nav = () =>
+    window.top.postMessage(
+      JSON.stringify({ from: 'studio', event: 'back' }),
+      '*',
+    );
+
   render() {
-    const { appVersion } = this.props;
     const { loading, activeMenu } = this.state;
-    const locale = cookies.get('locale');
-    const nGQLHref =
-      locale === 'ZH_CN'
-        ? 'https://docs.nebula-graph.com.cn/2.5.0/3.ngql-guide/1.nGQL-overview/1.overview/'
-        : 'https://docs.nebula-graph.io/2.5.0/3.ngql-guide/1.nGQL-overview/1.overview/';
-    const mannualHref =
-      locale === 'ZH_CN'
-        ? 'https://docs.nebula-graph.com.cn/2.5.0/nebula-studio/about-studio/st-ug-what-is-graph-studio/'
-        : 'https://docs.nebula-graph.io/2.5.0/nebula-studio/about-studio/st-ug-what-is-graph-studio/';
-    const versionLogHref =
-      locale === 'ZH_CN'
-        ? 'https://docs.nebula-graph.com.cn/2.5.0/nebula-studio/about-studio/st-ug-release-note/'
-        : 'https://docs.nebula-graph.io/2.5.0/nebula-studio/about-studio/st-ug-release-note/';
     return (
       <>
         <LanguageContext.Provider
@@ -172,7 +152,7 @@ class App extends React.Component<IProps, IState> {
           ) : (
             <Layout className="nebula-graph-studio">
               <Header>
-                <div className="studio-logo">
+                <div className="studio-logo" onClick={this.back2Nav}>
                   <img src={logo} />
                 </div>
                 <Menu
@@ -225,109 +205,6 @@ class App extends React.Component<IProps, IState> {
                     </Link>
                   </Menu.Item>
                 </Menu>
-                <div className="lang-select">
-                  <span>{intl.get('common.languageSelect')}: </span>
-                  <Select
-                    value={this.currentLocale}
-                    onChange={this.toggleLanguage}
-                  >
-                    {Object.keys(INTL_LOCALE_SELECT).map(locale => (
-                      <Option
-                        key={locale}
-                        value={INTL_LOCALE_SELECT[locale].NAME}
-                      >
-                        {INTL_LOCALE_SELECT[locale].TEXT}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-                <Dropdown
-                  className="setting"
-                  overlay={
-                    <Menu>
-                      <Menu.Item>
-                        <a onClick={this.handleClear}>
-                          <Icon type="logout" />
-                          {intl.get('configServer.clear')}
-                        </a>
-                      </Menu.Item>
-                    </Menu>
-                  }
-                >
-                  <a className="ant-dropdown-link">
-                    {intl.get('common.setting')} <Icon type="down" />
-                  </a>
-                </Dropdown>
-                <Dropdown
-                  className="help"
-                  overlay={
-                    <Menu>
-                      <Menu.Item onClick={() => trackPageView('/user-mannual')}>
-                        <a href={mannualHref} target="_blank">
-                          <Icon type="compass" />
-                          {intl.get('common.use')}
-                        </a>
-                      </Menu.Item>
-                      <Menu.Item onClick={() => trackPageView('/nebula-doc')}>
-                        <a href={nGQLHref} target="_blank">
-                          <Icon type="star" />
-                          nGQL
-                        </a>
-                      </Menu.Item>
-                      <Menu.Item>
-                        <a href={intl.get('common.forumLink')} target="_blank">
-                          <Icon type="question" />
-                          {intl.get('common.forum')}
-                        </a>
-                      </Menu.Item>
-                    </Menu>
-                  }
-                >
-                  <a className="ant-dropdown-link">
-                    {intl.get('common.help')} <Icon type="down" />
-                  </a>
-                </Dropdown>
-                <div
-                  className="github-star"
-                  data-track-category="navigation"
-                  data-track-action="star_github"
-                  data-track-label="from_navigation"
-                >
-                  <a
-                    className="github-button"
-                    href="https://github.com/vesoft-inc/nebula"
-                    data-size="large"
-                    data-show-count="true"
-                    aria-label="Star vesoft-inc/nebula on GitHub"
-                  >
-                    Star
-                  </a>
-                </div>
-                {appVersion && (
-                  <Dropdown
-                    className="version"
-                    overlay={
-                      <Menu>
-                        <Menu.Item>
-                          <a
-                            data-track-category="navigation"
-                            data-track-action="view_changelog"
-                            href={versionLogHref}
-                            target="_blank"
-                          >
-                            <Icon type="tags" />
-                            {intl.get('common.release')}
-                          </a>
-                        </Menu.Item>
-                      </Menu>
-                    }
-                  >
-                    <a>
-                      v{appVersion}
-                      <Icon type="down" />
-                    </a>
-                  </Dropdown>
-                )}
               </Header>
               <Content>
                 <Switch>

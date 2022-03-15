@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/iris-contrib/middleware/secure"
 	"github.com/vesoft-inc/nebula-studio/server/pkg/config"
 	"github.com/vesoft-inc/nebula-studio/server/pkg/logging"
 	"github.com/vesoft-inc/nebula-studio/server/pkg/webserver"
@@ -41,7 +42,13 @@ func main() {
 
 	importer.InitDB()
 
+	s := secure.New(secure.Options{
+		// FrameDeny:               true,           // If FrameDeny is set to true, adds the X-Frame-Options header with the value of `DENY`. Default is false.
+		// CustomFrameOptionsValue: "ALLOW-FROM *", // CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option.
+	})
+
 	app := webserver.InitApp()
+	app.Use(s.Handler)
 	app.HandleDir("/", http.FS(assets), iris.DirOptions{
 		IndexName: "/assets/index.html",
 		SPA:       true,
